@@ -22,7 +22,7 @@ class WebHookInjector(object):
         if isinstance(webhook, type):
             webhook = webhook.__call__()
         if secret:
-            webhook.hmac_o = hmac.new(bytes(secret, "utf-8"), digestmod=hashlib.sha1)
+            webhook.secret = secret
 
         class WebHookHandler(tornado.web.RequestHandler):
             def post(self, *args, **kwargs):
@@ -34,7 +34,8 @@ class WebHookInjector(object):
 
 class AbstractWebHook(object):
     def __init__(self):
-        self.hmac_o = None
+        self.secret = None
+        self.on_hook_init()
 
     def handle_post(self, request):
         """
@@ -48,11 +49,12 @@ class AbstractWebHook(object):
         if "X-GitHub-Event" not in headers:
             return
         event_type = headers["X-GitHub-Event"]
-        if (self.hmac_o and "X-Hub-Signature" in headers.keys()) or (
-                not self.hmac_o and "X-Hub-Signature" not in headers.keys()):
+        if (self.secret and "X-Hub-Signature" in headers.keys()) or (
+                not self.secret and "X-Hub-Signature" not in headers.keys()):
             digit = headers["X-Hub-Signature"].split("=")[1]
-            self.hmac_o.update(bytes(request.body))
-            if self.hmac_o.hexdigest() != digit:
+            hmac_o = hmac.new(bytes(self.secret, "utf-8"), digestmod=hashlib.sha1)
+            hmac_o.update(bytes(request.body))
+            if hmac_o.hexdigest() != digit:
                 print("Signature error.")
                 return
         else:
@@ -80,6 +82,13 @@ class AbstractWebHook(object):
             return self.on_push
         else:
             return None
+
+    def on_hook_init(self):
+        """
+
+        :return:
+        """
+        pass
 
     def on_commit_comment(self, payload):
         """
