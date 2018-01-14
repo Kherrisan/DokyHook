@@ -23,6 +23,6 @@ Usage example:
 
     if __name__ == '__main__':
         app = tornado.web.Application()
-        WebHookInjector.inject("/test/webhook", app, AutoPullHook, "zou970514")
+        WebHookInjector.inject("/test/webhook", app, AutoPullHook, "the secret")
         app.listen(8080)
         tornado.ioloop.IOLoop.current().start()
