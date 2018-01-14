@@ -1,6 +1,7 @@
 import tornado.ioloop
 import tornado.web
 import hmac
+import hashlib
 
 
 class WebHookInjector(object):
@@ -21,7 +22,7 @@ class WebHookInjector(object):
         if isinstance(webhook, type):
             webhook = webhook.__call__()
         if secret:
-            webhook.hmac_o = hmac.new(bytes(secret, "utf-8"))
+            webhook.hmac_o = hmac.new(bytes(secret, "utf-8"), digestmod=hashlib.sha1)
 
         class WebHookHandler(tornado.web.RequestHandler):
             def post(self, *args, **kwargs):
