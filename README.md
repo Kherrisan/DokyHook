@@ -26,3 +26,5 @@ Usage example:
         WebHookInjector.inject("/test/webhook", app, AutoPullHook, "the secret")
         app.listen(8080)
         tornado.ioloop.IOLoop.current().start()
+        
+This example shows how to pull the respository automatically when a commit take place.

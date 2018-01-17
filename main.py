@@ -1,6 +1,5 @@
 import tornado.ioloop
 import subprocess
-import os
 
 from WebHook import AbstractWebHook, WebHookInjector
 

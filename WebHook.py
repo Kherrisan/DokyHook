@@ -2,6 +2,7 @@ import tornado.ioloop
 import tornado.web
 import hmac
 import hashlib
+import logging
 
 
 class WebHookInjector(object):
@@ -12,12 +13,12 @@ class WebHookInjector(object):
     @staticmethod
     def inject(url, app, webhook, secret=None):
         """
-
-        :param url:
-        :param app:
-        :param webhook:
-        :param secret:
-        :return:
+        Inject the new webhook handle into tornado app.
+        :param url:The url which maps to the request handle.
+        :param app:Tornado app object,which could already hold several request handles.
+        :param webhook:The hook class which extends the AbstractWebHook and overrides specific callback functions.
+        :param secret:None if no secret is configured,if is not None,the webhook object would check the digest everytime receiving post request.
+        :return:webhook object.
         """
         if isinstance(webhook, type):
             webhook = webhook.__call__()
@@ -34,6 +35,9 @@ class WebHookInjector(object):
 
 class AbstractWebHook(object):
     def __init__(self):
+        """
+        You can override customed constructor but remember to invoke the constructor of super class in the first line.
+        """
         self.secret = None
         self.on_hook_init()
 
@@ -43,6 +47,7 @@ class AbstractWebHook(object):
         :param request:
         :return:
         """
+        logging.debug("Received post request.")
         if not request.headers:
             return
         headers = request.headers
@@ -55,12 +60,13 @@ class AbstractWebHook(object):
             hmac_o = hmac.new(bytes(self.secret, "utf-8"), digestmod=hashlib.sha1)
             hmac_o.update(bytes(request.body))
             if hmac_o.hexdigest() != digit:
-                print("Signature error.")
+                logging.error("Digest of payload is inconsistent with the signature in the request headers.")
                 return
         else:
-            print("Signature configuartion error.")
+            logging.error("Github and programme secret configuration inconsistent.")
             return
         payload = request.body
+        logging.info("Payload :%s" % (payload,))
         callback = self.__dispatch(event_type)
         if callback:
             callback(payload)
@@ -72,6 +78,7 @@ class AbstractWebHook(object):
         :param event_type:
         :return:
         """
+        logging.info("Event type :%s" % (event_type,))
         if event_type == "commit_comment":
             return self.on_commit_comment
         elif event_type == "create":
